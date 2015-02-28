@@ -7,12 +7,12 @@
 
 char *pmids_url_base = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed";
 
-struct string {
+typedef struct {
   char *ptr;
   size_t len;
-};
+} mystring;
 
-void init_string(struct string *s) {
+void init_string(mystring *s) {
   s->len = 0;
   s->ptr = malloc(s->len+1);
   if (s->ptr == NULL) {
@@ -22,7 +22,7 @@ void init_string(struct string *s) {
   s->ptr[0] = '\0';
 }
 
-size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s)
+size_t writefunc(void *ptr, size_t size, size_t nmemb, mystring *s)
 {
   size_t new_len = s->len + size*nmemb;
   s->ptr = realloc(s->ptr, new_len+1);
@@ -48,7 +48,7 @@ int get_pmids(char const *search_term, int const retmax, char **pmid_array, int 
     strcat(pmids_url, search_term);
     CURL *curl = curl_easy_init();
     if(!curl) return -1;
-    struct string s;
+    mystring s;
     init_string(&s);
     curl_easy_setopt(curl, CURLOPT_URL, pmids_url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
