@@ -36,7 +36,7 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, mystring *s)
   return size*nmemb;
 }
 
-int get_pmids(char const *search_term, int const retmax, char **pmid_array, int *ret){
+void get_pmids(char const *search_term, int const retmax, char **pmid_array, int *ret){
 
     char retmax_str[16];
     sprintf(retmax_str, "%d", retmax); 
@@ -47,14 +47,14 @@ int get_pmids(char const *search_term, int const retmax, char **pmid_array, int 
     strcat(pmids_url, "&term=");
     strcat(pmids_url, search_term);
     CURL *curl = curl_easy_init();
-    if(!curl) return -1;
+    if(!curl) { printf("oops! problem with curl init\n"); return; }
     mystring s;
     init_string(&s);
     curl_easy_setopt(curl, CURLOPT_URL, pmids_url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
     CURLcode res = curl_easy_perform(curl);
-    if (res) return -1;
+    if (res) {printf("oops! problem with curl download\n"); return ; }
     const xmlChar *pmidspath= (xmlChar*)"//eSearchResult/IdList/Id";
     xmlDocPtr doc = xmlParseDoc((xmlChar *)s.ptr);
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
@@ -69,7 +69,6 @@ int get_pmids(char const *search_term, int const retmax, char **pmid_array, int 
     xmlXPathFreeContext(context);
     xmlFreeDoc(doc);
     curl_easy_cleanup(curl);
-    return 0;
 }
 
 
