@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     if (argc < 2) {
         printf("\nusage: pubmed <searchterm> <maxret>\n"
                "where <searchterm> is like 'gribble+pl[au]'\n"
-               "and (optional) <retmax> is max number of returned records (default = 10)");
+               "and (optional) <retmax> is max number of returned records (default = 10)\n\n");
         return 1;
     }
     else {
