@@ -73,7 +73,7 @@ void get_pmids(char const *search_term, int const retmax, char **pmid_array, int
 
 void get_articles(char **pmid_array, int ret) {
 
-  char fetch_url[256]="";
+  char fetch_url[2048]="";
   strcat(fetch_url, "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
   for (int i=0; i<ret; i++) {
     strcat(fetch_url, pmid_array[i]);
@@ -89,10 +89,10 @@ void get_articles(char **pmid_array, int ret) {
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
   curl_easy_perform(curl);
 
-  FILE *fid = fopen("out", "w");
-  fprintf(fid, "%s\n", fetch_url);
-  fprintf(fid, "%s\n", s.ptr);
-  fclose(fid);
+  // FILE *fid = fopen("out", "w");
+  // fprintf(fid, "%s\n", fetch_url);
+  // fprintf(fid, "%s\n", s.ptr);
+  // fclose(fid);
 
   xmlDocPtr doc = xmlParseDoc((xmlChar *)s.ptr);
   xmlXPathContextPtr context = xmlXPathNewContext(doc);
@@ -108,6 +108,7 @@ void get_articles(char **pmid_array, int ret) {
   const xmlChar *volumePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Volume";
   const xmlChar *issuePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Issue";  
   const xmlChar *pagesPath = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
+  const xmlChar *doiPath = (xmlChar *) "MedlineCitation/Article/ELocationID";
   
   char citationStr[1024];
 
@@ -120,6 +121,7 @@ void get_articles(char **pmid_array, int ret) {
     xmlXPathObjectPtr volumePtr = xmlXPathEvalExpression(volumePath, context);
     xmlXPathObjectPtr issuePtr = xmlXPathEvalExpression(issuePath, context);
     xmlXPathObjectPtr pagesPtr = xmlXPathEvalExpression(pagesPath, context);
+    xmlXPathObjectPtr doiPtr = xmlXPathEvalExpression(doiPath, context);
 
     char yearStr[5];
     if (xmlXPathNodeSetIsEmpty(yearPtr->nodesetval)) {
@@ -181,6 +183,16 @@ void get_articles(char **pmid_array, int ret) {
       pagesStr[pages_len] = '\0';
     }
 
+    char doiStr[256];
+    if (xmlXPathNodeSetIsEmpty(doiPtr->nodesetval)) {
+      doiStr[0]='\0';
+    }
+    else {
+      int doi_len = strlen((char *)xmlNodeGetContent(doiPtr->nodesetval->nodeTab[0]));
+      strncpy(doiStr, (char *)xmlNodeGetContent(doiPtr->nodesetval->nodeTab[0]), doi_len);
+      doiStr[doi_len] = '\0';
+    }
+
     strcpy(citationStr, "(");
     strcat(citationStr, yearStr);
     strcat(citationStr, ") ");
@@ -189,12 +201,21 @@ void get_articles(char **pmid_array, int ret) {
     strcat(citationStr, journalStr);
     strcat(citationStr, " ");
     strcat(citationStr, volumeStr);
-    strcat(citationStr, "(");
-    strcat(citationStr, issueStr);
-    strcat(citationStr, ")");
-    strcat(citationStr, ":");
-    strcat(citationStr, pagesStr);
-
+    if (strlen(issueStr)>0) {
+      strcat(citationStr, "(");
+      strcat(citationStr, issueStr);
+      strcat(citationStr, ")");
+    }
+    if (strlen(pagesStr)>0) {
+      strcat(citationStr, ":");
+      strcat(citationStr, pagesStr);
+    }
+    strcat(citationStr, ".");
+    if (strlen(doiStr)>0) {
+      strcat(citationStr, " http://doi.org/");
+      strcat(citationStr, doiStr);
+    }
+    
     printf("\n%s\n", citationStr);
 
   }
