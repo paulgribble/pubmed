@@ -85,6 +85,12 @@ char * get_xml_field(xmlChar *fieldPath, xmlXPathContextPtr context) {
   return fieldStr;
 }
 
+char * get_xml_authors(xmlXPathContextPtr context) {
+  char *authorStr = malloc(sizeof(char)*512);
+  strcpy(authorStr, "Smith J, Doe J");
+  return authorStr;
+}
+
 void get_articles(char **pmid_array, int ret) {
 
   char fetch_url[2048]="";
@@ -130,6 +136,7 @@ void get_articles(char **pmid_array, int ret) {
 
     xmlXPathSetContextNode(articles->nodesetval->nodeTab[i], context);
 
+    char *authorStr = get_xml_authors(context);
     char *yearStr = get_xml_field(yearPath, context);
     char *titleStr = get_xml_field(titlePath, context);
     char *journalStr = get_xml_field(journalPath, context);
@@ -138,7 +145,8 @@ void get_articles(char **pmid_array, int ret) {
     char *pagesStr = get_xml_field(pagesPath, context);
     char *doiStr = get_xml_field(doiPath, context);
 
-    strcpy(citationStr, "(");
+    strcpy(citationStr, authorStr);
+    strcat(citationStr, " (");
     strcat(citationStr, yearStr);
     strcat(citationStr, ") ");
     strcat(citationStr, titleStr);
@@ -163,6 +171,7 @@ void get_articles(char **pmid_array, int ret) {
     
     printf("\n%s\n", citationStr);
 
+    free(authorStr);
     free(yearStr);
     free(titleStr);
     free(journalStr);
