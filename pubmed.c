@@ -94,16 +94,12 @@ char * get_xml_authors(xmlXPathContextPtr context) {
   xmlXPathObjectPtr authors = xmlXPathEvalExpression(authorListPath, context);
   int n_authors = authors->nodesetval->nodeNr;
 
-//  printf("%d authors\n", n_authors);
-
   xmlChar *lastnamePath = (xmlChar *) "LastName";
-//  xmlChar *firstnamePath = (xmlChar *) "ForeName";
   xmlChar *initialsPath = (xmlChar *) "Initials";
 
   for (int i=0; i<n_authors; i++) {
     xmlXPathSetContextNode(authors->nodesetval->nodeTab[i], context);
     char *lastname = get_xml_field(lastnamePath, context);
-//    char *firstname = get_xml_field(firstnamePath, context);
     char *initials = get_xml_field(initialsPath, context);
     strcat(authorStr, lastname);
     strcat(authorStr, " ");
