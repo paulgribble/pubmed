@@ -71,6 +71,137 @@ void get_pmids(char const *search_term, int const retmax, char **pmid_array, int
     curl_easy_cleanup(curl);
 }
 
+void get_articles(char **pmid_array, int ret) {
+
+  char fetch_url[256]="";
+  strcat(fetch_url, "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
+  for (int i=0; i<ret; i++) {
+    strcat(fetch_url, pmid_array[i]);
+    strcat(fetch_url, ",");
+  }
+  // printf("%s\n", fetch_url);
+
+  CURL *curl = curl_easy_init();
+  mystring s;
+  init_string(&s);
+  curl_easy_setopt(curl, CURLOPT_URL, fetch_url);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
+  curl_easy_perform(curl);
+
+  FILE *fid = fopen("out", "w");
+  fprintf(fid, "%s\n", fetch_url);
+  fprintf(fid, "%s\n", s.ptr);
+  fclose(fid);
+
+  xmlDocPtr doc = xmlParseDoc((xmlChar *)s.ptr);
+  xmlXPathContextPtr context = xmlXPathNewContext(doc);
+
+  const xmlChar *articlepath = (xmlChar *) "//PubmedArticleSet/PubmedArticle";
+  xmlXPathObjectPtr articles = xmlXPathEvalExpression(articlepath, context);
+  int ret_art = articles->nodesetval->nodeNr;
+  //printf("%d returned\n", ret_art);
+
+  const xmlChar *yearPath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year";
+  const xmlChar *titlePath = (xmlChar *) "MedlineCitation/Article/ArticleTitle";
+  const xmlChar *journalPath = (xmlChar *) "MedlineCitation/Article/Journal/ISOAbbreviation";
+  const xmlChar *volumePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Volume";
+  const xmlChar *issuePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Issue";  
+  const xmlChar *pagesPath = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
+  
+  char citationStr[1024];
+
+  for (int i=0; i<ret_art; i++) {
+
+    xmlXPathSetContextNode(articles->nodesetval->nodeTab[i], context);
+    xmlXPathObjectPtr yearPtr = xmlXPathEvalExpression(yearPath, context);
+    xmlXPathObjectPtr titlePtr = xmlXPathEvalExpression(titlePath, context);
+    xmlXPathObjectPtr journalPtr = xmlXPathEvalExpression(journalPath, context);
+    xmlXPathObjectPtr volumePtr = xmlXPathEvalExpression(volumePath, context);
+    xmlXPathObjectPtr issuePtr = xmlXPathEvalExpression(issuePath, context);
+    xmlXPathObjectPtr pagesPtr = xmlXPathEvalExpression(pagesPath, context);
+
+    char yearStr[5];
+    if (xmlXPathNodeSetIsEmpty(yearPtr->nodesetval)) {
+      yearStr[0]='\0';
+    }
+    else {
+      int year_len = strlen((char *)xmlNodeGetContent(yearPtr->nodesetval->nodeTab[0]));
+      strncpy(yearStr, (char *)xmlNodeGetContent(yearPtr->nodesetval->nodeTab[0]), year_len);
+      yearStr[year_len] = '\0';
+    }
+
+    char titleStr[256];
+    if (xmlXPathNodeSetIsEmpty(titlePtr->nodesetval)) {
+      titleStr[0]='\0';
+    }
+    else {
+      int title_len = strlen((char *)xmlNodeGetContent(titlePtr->nodesetval->nodeTab[0]));
+      strncpy(titleStr, (char *)xmlNodeGetContent(titlePtr->nodesetval->nodeTab[0]), title_len);
+      titleStr[title_len] = '\0';
+    }
+
+    char journalStr[256];
+    if (xmlXPathNodeSetIsEmpty(journalPtr->nodesetval)) {
+      journalStr[0]='\0';
+    }
+    else {
+      int journal_len = strlen((char *)xmlNodeGetContent(journalPtr->nodesetval->nodeTab[0]));
+      strncpy(journalStr, (char *)xmlNodeGetContent(journalPtr->nodesetval->nodeTab[0]), journal_len);
+      journalStr[journal_len] = '\0';
+    }
+
+    char volumeStr[256];
+    if (xmlXPathNodeSetIsEmpty(volumePtr->nodesetval)) {
+      volumeStr[0]='\0';
+    }
+    else {
+      int volume_len = strlen((char *)xmlNodeGetContent(volumePtr->nodesetval->nodeTab[0]));
+      strncpy(volumeStr, (char *)xmlNodeGetContent(volumePtr->nodesetval->nodeTab[0]), volume_len);
+      volumeStr[volume_len] = '\0';
+    }
+
+    char issueStr[256];
+    if (xmlXPathNodeSetIsEmpty(issuePtr->nodesetval)) {
+      issueStr[0]='\0';
+    }
+    else {
+      int issue_len = strlen((char *)xmlNodeGetContent(issuePtr->nodesetval->nodeTab[0]));
+      strncpy(issueStr, (char *)xmlNodeGetContent(issuePtr->nodesetval->nodeTab[0]), issue_len);
+      issueStr[issue_len] = '\0';
+    }
+
+    char pagesStr[256];
+    if (xmlXPathNodeSetIsEmpty(pagesPtr->nodesetval)) {
+      pagesStr[0]='\0';
+    }
+    else {
+      int pages_len = strlen((char *)xmlNodeGetContent(pagesPtr->nodesetval->nodeTab[0]));
+      strncpy(pagesStr, (char *)xmlNodeGetContent(pagesPtr->nodesetval->nodeTab[0]), pages_len);
+      pagesStr[pages_len] = '\0';
+    }
+
+    strcpy(citationStr, "(");
+    strcat(citationStr, yearStr);
+    strcat(citationStr, ") ");
+    strcat(citationStr, titleStr);
+    strcat(citationStr, " ");
+    strcat(citationStr, journalStr);
+    strcat(citationStr, " ");
+    strcat(citationStr, volumeStr);
+    strcat(citationStr, "(");
+    strcat(citationStr, issueStr);
+    strcat(citationStr, ")");
+    strcat(citationStr, ":");
+    strcat(citationStr, pagesStr);
+
+    printf("\n%s\n", citationStr);
+
+  }
+  printf("\n");
+
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -88,7 +219,10 @@ int main(int argc, char *argv[]) {
         int ret = 0;
 
         get_pmids(argv[1], retmax, pmid_array, &ret);
-        for (int i=0; i<ret; i++) { printf("%s\n", pmid_array[i]); }
+
+        printf("returned %d\n", ret);
+
+        get_articles(pmid_array, ret);        
 
         for (int i=0; i<ret; i++) { free(pmid_array[i]); }
         free(pmid_array);
