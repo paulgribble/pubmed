@@ -71,6 +71,20 @@ void get_pmids(char const *search_term, int const retmax, char **pmid_array, int
     curl_easy_cleanup(curl);
 }
 
+char * get_xml_field(xmlChar *fieldPath, xmlXPathContextPtr context) {
+  xmlXPathObjectPtr fieldPtr = xmlXPathEvalExpression(fieldPath, context);
+  char *fieldStr = malloc(sizeof(char)*256);
+  if (xmlXPathNodeSetIsEmpty(fieldPtr->nodesetval)) {
+      fieldStr[0]='\0';
+    }
+    else {
+      int field_len = strlen((char *)xmlNodeGetContent(fieldPtr->nodesetval->nodeTab[0]));
+      strncpy(fieldStr, (char *)xmlNodeGetContent(fieldPtr->nodesetval->nodeTab[0]), field_len);
+      fieldStr[field_len] = '\0';
+    }
+  return fieldStr;
+}
+
 void get_articles(char **pmid_array, int ret) {
 
   char fetch_url[2048]="";
@@ -97,101 +111,32 @@ void get_articles(char **pmid_array, int ret) {
   xmlDocPtr doc = xmlParseDoc((xmlChar *)s.ptr);
   xmlXPathContextPtr context = xmlXPathNewContext(doc);
 
-  const xmlChar *articlepath = (xmlChar *) "//PubmedArticleSet/PubmedArticle";
+  xmlChar *articlepath = (xmlChar *) "//PubmedArticleSet/PubmedArticle";
   xmlXPathObjectPtr articles = xmlXPathEvalExpression(articlepath, context);
   int ret_art = articles->nodesetval->nodeNr;
   //printf("%d returned\n", ret_art);
 
-  const xmlChar *yearPath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year";
-  const xmlChar *titlePath = (xmlChar *) "MedlineCitation/Article/ArticleTitle";
-  const xmlChar *journalPath = (xmlChar *) "MedlineCitation/Article/Journal/ISOAbbreviation";
-  const xmlChar *volumePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Volume";
-  const xmlChar *issuePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Issue";  
-  const xmlChar *pagesPath = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
-  const xmlChar *doiPath = (xmlChar *) "MedlineCitation/Article/ELocationID";
+  xmlChar *yearPath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year";
+  xmlChar *titlePath = (xmlChar *) "MedlineCitation/Article/ArticleTitle";
+  xmlChar *journalPath = (xmlChar *) "MedlineCitation/Article/Journal/ISOAbbreviation";
+  xmlChar *volumePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Volume";
+  xmlChar *issuePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Issue";  
+  xmlChar *pagesPath = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
+  xmlChar *doiPath = (xmlChar *) "MedlineCitation/Article/ELocationID";
   
   char citationStr[1024];
 
   for (int i=0; i<ret_art; i++) {
 
     xmlXPathSetContextNode(articles->nodesetval->nodeTab[i], context);
-    xmlXPathObjectPtr yearPtr = xmlXPathEvalExpression(yearPath, context);
-    xmlXPathObjectPtr titlePtr = xmlXPathEvalExpression(titlePath, context);
-    xmlXPathObjectPtr journalPtr = xmlXPathEvalExpression(journalPath, context);
-    xmlXPathObjectPtr volumePtr = xmlXPathEvalExpression(volumePath, context);
-    xmlXPathObjectPtr issuePtr = xmlXPathEvalExpression(issuePath, context);
-    xmlXPathObjectPtr pagesPtr = xmlXPathEvalExpression(pagesPath, context);
-    xmlXPathObjectPtr doiPtr = xmlXPathEvalExpression(doiPath, context);
 
-    char yearStr[5];
-    if (xmlXPathNodeSetIsEmpty(yearPtr->nodesetval)) {
-      yearStr[0]='\0';
-    }
-    else {
-      int year_len = strlen((char *)xmlNodeGetContent(yearPtr->nodesetval->nodeTab[0]));
-      strncpy(yearStr, (char *)xmlNodeGetContent(yearPtr->nodesetval->nodeTab[0]), year_len);
-      yearStr[year_len] = '\0';
-    }
-
-    char titleStr[256];
-    if (xmlXPathNodeSetIsEmpty(titlePtr->nodesetval)) {
-      titleStr[0]='\0';
-    }
-    else {
-      int title_len = strlen((char *)xmlNodeGetContent(titlePtr->nodesetval->nodeTab[0]));
-      strncpy(titleStr, (char *)xmlNodeGetContent(titlePtr->nodesetval->nodeTab[0]), title_len);
-      titleStr[title_len] = '\0';
-    }
-
-    char journalStr[256];
-    if (xmlXPathNodeSetIsEmpty(journalPtr->nodesetval)) {
-      journalStr[0]='\0';
-    }
-    else {
-      int journal_len = strlen((char *)xmlNodeGetContent(journalPtr->nodesetval->nodeTab[0]));
-      strncpy(journalStr, (char *)xmlNodeGetContent(journalPtr->nodesetval->nodeTab[0]), journal_len);
-      journalStr[journal_len] = '\0';
-    }
-
-    char volumeStr[256];
-    if (xmlXPathNodeSetIsEmpty(volumePtr->nodesetval)) {
-      volumeStr[0]='\0';
-    }
-    else {
-      int volume_len = strlen((char *)xmlNodeGetContent(volumePtr->nodesetval->nodeTab[0]));
-      strncpy(volumeStr, (char *)xmlNodeGetContent(volumePtr->nodesetval->nodeTab[0]), volume_len);
-      volumeStr[volume_len] = '\0';
-    }
-
-    char issueStr[256];
-    if (xmlXPathNodeSetIsEmpty(issuePtr->nodesetval)) {
-      issueStr[0]='\0';
-    }
-    else {
-      int issue_len = strlen((char *)xmlNodeGetContent(issuePtr->nodesetval->nodeTab[0]));
-      strncpy(issueStr, (char *)xmlNodeGetContent(issuePtr->nodesetval->nodeTab[0]), issue_len);
-      issueStr[issue_len] = '\0';
-    }
-
-    char pagesStr[256];
-    if (xmlXPathNodeSetIsEmpty(pagesPtr->nodesetval)) {
-      pagesStr[0]='\0';
-    }
-    else {
-      int pages_len = strlen((char *)xmlNodeGetContent(pagesPtr->nodesetval->nodeTab[0]));
-      strncpy(pagesStr, (char *)xmlNodeGetContent(pagesPtr->nodesetval->nodeTab[0]), pages_len);
-      pagesStr[pages_len] = '\0';
-    }
-
-    char doiStr[256];
-    if (xmlXPathNodeSetIsEmpty(doiPtr->nodesetval)) {
-      doiStr[0]='\0';
-    }
-    else {
-      int doi_len = strlen((char *)xmlNodeGetContent(doiPtr->nodesetval->nodeTab[0]));
-      strncpy(doiStr, (char *)xmlNodeGetContent(doiPtr->nodesetval->nodeTab[0]), doi_len);
-      doiStr[doi_len] = '\0';
-    }
+    char *yearStr = get_xml_field(yearPath, context);
+    char *titleStr = get_xml_field(titlePath, context);
+    char *journalStr = get_xml_field(journalPath, context);
+    char *volumeStr = get_xml_field(volumePath, context);
+    char *issueStr = get_xml_field(issuePath, context);
+    char *pagesStr = get_xml_field(pagesPath, context);
+    char *doiStr = get_xml_field(doiPath, context);
 
     strcpy(citationStr, "(");
     strcat(citationStr, yearStr);
@@ -217,6 +162,14 @@ void get_articles(char **pmid_array, int ret) {
     }
     
     printf("\n%s\n", citationStr);
+
+    free(yearStr);
+    free(titleStr);
+    free(journalStr);
+    free(volumeStr);
+    free(issueStr);
+    free(pagesStr);
+    free(doiStr);
 
   }
   printf("\n");
