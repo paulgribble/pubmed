@@ -72,6 +72,7 @@ void get_pmids(char const *search_term, int const retmax, char **pmid_array, int
 }
 
 char * get_xml_field(xmlChar *fieldPath, xmlXPathContextPtr context) {
+
   xmlXPathObjectPtr fieldPtr = xmlXPathEvalExpression(fieldPath, context);
   char *fieldStr = malloc(sizeof(char)*256);
   if (xmlXPathNodeSetIsEmpty(fieldPtr->nodesetval)) {
@@ -86,8 +87,30 @@ char * get_xml_field(xmlChar *fieldPath, xmlXPathContextPtr context) {
 }
 
 char * get_xml_authors(xmlXPathContextPtr context) {
+
   char *authorStr = malloc(sizeof(char)*512);
-  strcpy(authorStr, "Smith J, Doe J");
+
+  xmlChar *authorListPath = (xmlChar *) "MedlineCitation/Article/AuthorList/Author";
+  xmlXPathObjectPtr authors = xmlXPathEvalExpression(authorListPath, context);
+  int n_authors = authors->nodesetval->nodeNr;
+
+//  printf("%d authors\n", n_authors);
+
+  xmlChar *lastnamePath = (xmlChar *) "LastName";
+//  xmlChar *firstnamePath = (xmlChar *) "ForeName";
+  xmlChar *initialsPath = (xmlChar *) "Initials";
+
+  for (int i=0; i<n_authors; i++) {
+    xmlXPathSetContextNode(authors->nodesetval->nodeTab[i], context);
+    char *lastname = get_xml_field(lastnamePath, context);
+//    char *firstname = get_xml_field(firstnamePath, context);
+    char *initials = get_xml_field(initialsPath, context);
+    strcat(authorStr, lastname);
+    strcat(authorStr, " ");
+    strcat(authorStr, initials);
+    strcat(authorStr, ", ");
+  }
+  authorStr[strlen(authorStr)-2] = '\0';
   return authorStr;
 }
 
@@ -136,7 +159,6 @@ void get_articles(char **pmid_array, int ret) {
 
     xmlXPathSetContextNode(articles->nodesetval->nodeTab[i], context);
 
-    char *authorStr = get_xml_authors(context);
     char *yearStr = get_xml_field(yearPath, context);
     char *titleStr = get_xml_field(titlePath, context);
     char *journalStr = get_xml_field(journalPath, context);
@@ -144,6 +166,7 @@ void get_articles(char **pmid_array, int ret) {
     char *issueStr = get_xml_field(issuePath, context);
     char *pagesStr = get_xml_field(pagesPath, context);
     char *doiStr = get_xml_field(doiPath, context);
+    char *authorStr = get_xml_authors(context);
 
     strcpy(citationStr, authorStr);
     strcat(citationStr, " (");
@@ -203,7 +226,7 @@ int main(int argc, char *argv[]) {
 
         get_pmids(argv[1], retmax, pmid_array, &ret);
 
-        printf("returned %d\n", ret);
+        printf("\nreturned %d\n", ret);
 
         get_articles(pmid_array, ret);        
 
