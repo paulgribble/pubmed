@@ -116,7 +116,7 @@ char * get_xml_authors(xmlXPathContextPtr context) {
   return authorStr;
 }
 
-void get_articles(char **pmid_array, int ret) {
+void get_articles(char **pmid_array, int ret, int do_links) {
 
   char fetch_url[4096]="";
   strcat(fetch_url, "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
@@ -170,7 +170,13 @@ void get_articles(char **pmid_array, int ret) {
     char *doiStr = get_xml_field(doiPath, context);
     char *authorStr = get_xml_authors(context);
 
-    strcpy(citationStr, authorStr);
+    if (do_links) {
+      strcpy(citationStr, "<p>");
+      strcat(citationStr, authorStr);
+    }
+    else {
+      strcpy(citationStr, authorStr);
+    }
     strcat(citationStr, " (");
     strcat(citationStr, yearStr);
     strcat(citationStr, ") ");
@@ -189,14 +195,18 @@ void get_articles(char **pmid_array, int ret) {
       strcat(citationStr, pagesStr);
     }
     strcat(citationStr, ".");
-    if (strlen(doiStr)>0) {
-      strcat(citationStr, " http://doi.org/");
-      strcat(citationStr, doiStr);
-    }
-    else {
-      strcat(citationStr, " http://www.ncbi.nlm.nih.gov/pubmed/?term=");
-      strcat(citationStr, pmid_array[i]);
-      strcat(citationStr, "[pmid]");
+    if (do_links) {
+      if (strlen(doiStr)>0) {
+        strcat(citationStr, " <a href=\"http://doi.org/");
+        strcat(citationStr, doiStr);
+        strcat(citationStr, "\">link</a>");
+      }
+      else {
+        strcat(citationStr, " <a href=\"http://www.ncbi.nlm.nih.gov/pubmed/?term=");
+        strcat(citationStr, pmid_array[i]);
+        strcat(citationStr, "[pmid]\">link</a>");
+      }
+      strcat(citationStr, "</p>");
     }
     
     printf("\n%s\n", citationStr);
@@ -218,7 +228,6 @@ void get_articles(char **pmid_array, int ret) {
 
 int main(int argc, char *argv[]) {
 
-    int retmax = 3;
     if (argc < 2) {
         printf("\nusage: pubmed <searchterm> <maxret>\n"
                "where <searchterm> is like 'gribble pl[au]'\n"
@@ -226,23 +235,30 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     else {
+        int retmax = 3;
+        int do_links = 1;
         if (argc == 3) { retmax = atoi(argv[2]); }
 
         char **pmid_array = malloc(retmax * sizeof(char *));
         int ret = 0;
         int count = 0;
 
+        if (do_links) { printf("<p>"); }
+        printf("searched: %s\n", argv[1]);
+        if (do_links) { printf("<br>"); }
+
         for (int i=0; i<strlen(argv[1]); i++) {
-          if (argv[1][i]==' ') {
+          if (argv[1][i] == ' ') {
             argv[1][i] = '+';
           }
         }
 
         get_pmids(argv[1], retmax, pmid_array, &ret, &count);
 
-        printf("\nreturned %d/%d\n", ret, count);
+        printf("returned %d/%d\n", ret, count);
+        if (do_links) { printf("</p>"); }
 
-        get_articles(pmid_array, ret);        
+        get_articles(pmid_array, ret, do_links);        
 
         for (int i=0; i<ret; i++) { free(pmid_array[i]); }
         free(pmid_array);
