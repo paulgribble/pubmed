@@ -36,7 +36,7 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, mystring *s)
   return size*nmemb;
 }
 
-void get_pmids(char const *search_term, int const retmax, char **pmid_array, int *ret){
+void get_pmids(char *search_term, int retmax, char **pmid_array, int *ret, int *count){
 
     char retmax_str[16];
     sprintf(retmax_str, "%d", retmax); 
@@ -55,7 +55,8 @@ void get_pmids(char const *search_term, int const retmax, char **pmid_array, int
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
     CURLcode res = curl_easy_perform(curl);
     if (res) {printf("oops! problem with curl download\n"); return ; }
-    const xmlChar *pmidspath= (xmlChar*)"//eSearchResult/IdList/Id";
+    xmlChar *pmidspath= (xmlChar*)"//eSearchResult/IdList/Id";
+    // printf("%s\n", s.ptr);
     xmlDocPtr doc = xmlParseDoc((xmlChar *)s.ptr);
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
     xmlXPathObjectPtr pmids = xmlXPathEvalExpression(pmidspath, context);
@@ -65,6 +66,11 @@ void get_pmids(char const *search_term, int const retmax, char **pmid_array, int
         strncpy(pmid_array[i], (char *)xmlNodeGetContent(pmids->nodesetval->nodeTab[i]), 8);
         pmid_array[i][8] = '\0';
     }
+    xmlChar *countpath = (xmlChar *)"//eSearchResult/Count";
+    xmlXPathObjectPtr countPtr = xmlXPathEvalExpression(countpath, context);
+    char *countChar = (char *) xmlNodeGetContent(countPtr->nodesetval->nodeTab[0]);
+    *count = atoi(countChar);
+    xmlXPathFreeObject(countPtr);
     xmlXPathFreeObject(pmids);
     xmlXPathFreeContext(context);
     xmlFreeDoc(doc);
@@ -112,7 +118,7 @@ char * get_xml_authors(xmlXPathContextPtr context) {
 
 void get_articles(char **pmid_array, int ret) {
 
-  char fetch_url[2048]="";
+  char fetch_url[4096]="";
   strcat(fetch_url, "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
   for (int i=0; i<ret; i++) {
     strcat(fetch_url, pmid_array[i]);
@@ -187,6 +193,11 @@ void get_articles(char **pmid_array, int ret) {
       strcat(citationStr, " http://doi.org/");
       strcat(citationStr, doiStr);
     }
+    else {
+      strcat(citationStr, " http://www.ncbi.nlm.nih.gov/pubmed/?term=");
+      strcat(citationStr, pmid_array[i]);
+      strcat(citationStr, "[pmid]");
+    }
     
     printf("\n%s\n", citationStr);
 
@@ -207,11 +218,11 @@ void get_articles(char **pmid_array, int ret) {
 
 int main(int argc, char *argv[]) {
 
-    int retmax = 10;
+    int retmax = 3;
     if (argc < 2) {
         printf("\nusage: pubmed <searchterm> <maxret>\n"
-               "where <searchterm> is like 'gribble+pl[au]'\n"
-               "and (optional) <retmax> is max number of returned records (default = 10)\n\n");
+               "where <searchterm> is like 'gribble pl[au]'\n"
+               "and (optional) <retmax> is max number of returned records (default = 3)\n\n");
         return 1;
     }
     else {
@@ -219,10 +230,17 @@ int main(int argc, char *argv[]) {
 
         char **pmid_array = malloc(retmax * sizeof(char *));
         int ret = 0;
+        int count = 0;
 
-        get_pmids(argv[1], retmax, pmid_array, &ret);
+        for (int i=0; i<strlen(argv[1]); i++) {
+          if (argv[1][i]==' ') {
+            argv[1][i] = '+';
+          }
+        }
 
-        printf("\nreturned %d\n", ret);
+        get_pmids(argv[1], retmax, pmid_array, &ret, &count);
+
+        printf("\nreturned %d/%d\n", ret, count);
 
         get_articles(pmid_array, ret);        
 
