@@ -157,6 +157,8 @@ void get_articles(char **pmid_array, int ret, int do_links) {
   
   char citationStr[1024];
 
+  if (do_links) { printf("\n<ol reversed>\n"); }
+
   for (int i=0; i<ret_art; i++) {
 
     xmlXPathSetContextNode(articles->nodesetval->nodeTab[i], context);
@@ -170,13 +172,7 @@ void get_articles(char **pmid_array, int ret, int do_links) {
     char *doiStr = get_xml_field(doiPath, context);
     char *authorStr = get_xml_authors(context);
 
-    if (do_links) {
-      strcpy(citationStr, "<p>");
-      strcat(citationStr, authorStr);
-    }
-    else {
-      strcpy(citationStr, authorStr);
-    }
+    strcpy(citationStr, authorStr);
     strcat(citationStr, " (");
     strcat(citationStr, yearStr);
     strcat(citationStr, ") ");
@@ -206,10 +202,14 @@ void get_articles(char **pmid_array, int ret, int do_links) {
         strcat(citationStr, pmid_array[i]);
         strcat(citationStr, "[pmid]\">link</a>");
       }
-      strcat(citationStr, "</p>");
     }
-    
-    printf("\n%s\n", citationStr);
+
+    if (do_links) {
+      printf("\n<li>%s</li>\n", citationStr);
+    }
+    else {
+      printf("\n%s\n", citationStr);
+    }
 
     free(authorStr);
     free(yearStr);
@@ -222,6 +222,7 @@ void get_articles(char **pmid_array, int ret, int do_links) {
 
   }
   printf("\n");
+  if (do_links) { printf("</ol>\n"); }
 
 }
 
@@ -246,7 +247,7 @@ int main(int argc, char *argv[]) {
       int ret = 0;
       int count = 0;
 
-      if (do_links) { printf("<p>"); }
+      if (do_links) { printf("<html>\n<head></head>\n<body>\n<p>"); }
       printf("\nsearched: %s\n", argv[1]);
       if (do_links) { printf("<br>"); }
 
@@ -259,9 +260,11 @@ int main(int argc, char *argv[]) {
       get_pmids(argv[1], retmax, pmid_array, &ret, &count);
 
       printf("returned %d/%d\n", ret, count);
-      if (do_links) { printf("</p>"); }
+      if (do_links) { printf("</p>\n"); }
 
-      get_articles(pmid_array, ret, do_links);        
+      get_articles(pmid_array, ret, do_links);
+
+      if (do_links) { printf("\n</body>\n</html>"); }
 
       for (int i=0; i<ret; i++) { free(pmid_array[i]); }
       free(pmid_array);
