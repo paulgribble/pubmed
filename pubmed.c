@@ -178,6 +178,7 @@ void get_articles(char **pmid_array, int ret, int do_links) {
     strcat(citationStr, ") ");
     strcat(citationStr, titleStr);
     strcat(citationStr, " ");
+    if (do_links) { strcat(citationStr, "<b>"); }
     strcat(citationStr, journalStr);
     strcat(citationStr, " ");
     strcat(citationStr, volumeStr);
@@ -186,6 +187,7 @@ void get_articles(char **pmid_array, int ret, int do_links) {
       strcat(citationStr, issueStr);
       strcat(citationStr, ")");
     }
+    if (do_links) { strcat(citationStr, "</b>"); }
     if (strlen(pagesStr)>0) {
       strcat(citationStr, ":");
       strcat(citationStr, pagesStr);
