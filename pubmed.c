@@ -5,7 +5,7 @@
 #include <curl/curl.h>             // must have libcurl installed
 #include <libxml2/libxml/xpath.h>  // must have libxml2 installed
 
-char *pmids_url_base = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed";
+const char *pmids_url_base = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed";
 
 typedef struct {
   char *ptr;
@@ -38,9 +38,9 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, mystring *s)
 
 void get_pmids(char *search_term, int retmax, char **pmid_array, int *ret, int *count){
 
-    char retmax_str[16];
+    char retmax_str[16] = "";
     sprintf(retmax_str, "%d", retmax); 
-    char pmids_url[256];
+    char pmids_url[256] = "";
     strcat(pmids_url, pmids_url_base);
     strcat(pmids_url, "&retmax=");
     strcat(pmids_url, retmax_str);        
@@ -155,7 +155,7 @@ void get_articles(char **pmid_array, int ret, int do_links) {
   xmlChar *pagesPath = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
   xmlChar *doiPath = (xmlChar *) "MedlineCitation/Article/ELocationID";
   
-  char citationStr[1024];
+  char citationStr[1024] = "";
 
   if (do_links) { printf("\n<ol reversed>\n"); }
 
