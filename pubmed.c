@@ -249,7 +249,11 @@ int main(int argc, char *argv[]) {
       int ret = 0;
       int count = 0;
 
-      if (do_links) { printf("<html>\n<head></head>\n<body>\n<p>"); }
+      if (do_links) {
+        printf("<html>\n<head>\n");
+        printf("<style>\nli {\nmargin-bottom: 1em;\n}\n</style>\n");
+        printf("</head>\n<body>\n<p>");
+      }
       printf("\nsearched: %s\n", argv[1]);
       if (do_links) { printf("<br>"); }
 
