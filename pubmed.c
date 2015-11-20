@@ -1,3 +1,7 @@
+// dependencies: libcurl and libxml2
+//
+// on the mac: brew install libxml2
+
 
 #include <stdio.h>
 #include <stdlib.h>
