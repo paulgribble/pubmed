@@ -59,7 +59,7 @@ void get_pmids(char *search_term, int retmax, char **pmid_array, int *ret, int *
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
     CURLcode res = curl_easy_perform(curl);
     if (res) {printf("oops! problem with curl download\n"); return ; }
-    xmlChar *pmidspath= (xmlChar*)"//eSearchResult/IdList/Id";
+    xmlChar *pmidspath= (xmlChar*) "//eSearchResult/IdList/Id";
     // printf("%s\n", s.ptr);
     xmlDocPtr doc = xmlParseDoc((xmlChar *)s.ptr);
     xmlXPathContextPtr context = xmlXPathNewContext(doc);
@@ -74,6 +74,7 @@ void get_pmids(char *search_term, int retmax, char **pmid_array, int *ret, int *
     xmlXPathObjectPtr countPtr = xmlXPathEvalExpression(countpath, context);
     char *countChar = (char *) xmlNodeGetContent(countPtr->nodesetval->nodeTab[0]);
     *count = atoi(countChar);
+
     xmlXPathFreeObject(countPtr);
     xmlXPathFreeObject(pmids);
     xmlXPathFreeContext(context);
@@ -93,6 +94,7 @@ char * get_xml_field(xmlChar *fieldPath, xmlXPathContextPtr context) {
       strncpy(fieldStr, (char *)xmlNodeGetContent(fieldPtr->nodesetval->nodeTab[0]), field_len);
       fieldStr[field_len] = '\0';
     }
+  xmlXPathFreeObject(fieldPtr);
   return fieldStr;
 }
 
@@ -115,8 +117,12 @@ char * get_xml_authors(xmlXPathContextPtr context) {
     strcat(authorStr, " ");
     strcat(authorStr, initials);
     strcat(authorStr, ", ");
+    free(lastname);
+    free(initials);
   }
   authorStr[strlen(authorStr)-2] = '\0';
+
+  xmlXPathFreeObject(authors);
   return authorStr;
 }
 
@@ -227,9 +233,14 @@ void get_articles(char **pmid_array, int ret, int do_links) {
     free(doiStr);
 
   }
+
   printf("\n");
   if (do_links) { printf("</ol>\n"); }
-
+  
+  xmlXPathFreeObject(articles);
+  xmlXPathFreeContext(context);
+  xmlFree(doc);
+  curl_easy_cleanup(curl);  
 }
 
 
