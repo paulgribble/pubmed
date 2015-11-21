@@ -41,4 +41,4 @@ retrieve 10 most recent articles by P.L. Gribble, and write the list
 
 [gribble.html](http://htmlpreview.github.com/?https://github.com/paulgribble/pubmed/blob/master/gribble.html)
 
-![html preview][screenshot.png]
+![Image][screenshot.png]
