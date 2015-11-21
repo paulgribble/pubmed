@@ -2,6 +2,8 @@
 C code for searching PubMed
 (work in progress)
 
+dependencies: libcurl and libxml2
+
 usage examples:
 
 retrieve 3 most recent articles by P.L. Gribble and print them to the screen:
