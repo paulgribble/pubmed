@@ -39,4 +39,5 @@ retrieve 10 most recent articles by P.L. Gribble, and write the list
 ./pubmed 'gribble pl[au]' 10 1 > gribble.html ; open gribble.html
 ```
 
+http://htmlpreview.github.com/?https://github.com/paulgribble/pubmed/gribble.html
 
