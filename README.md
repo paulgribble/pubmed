@@ -1,6 +1,6 @@
 # pubmed
 C code for searching PubMed
-work in progress
+(work in progress)
 
 usage examples:
 
@@ -9,7 +9,7 @@ retrieve 3 most recent articles by P.L. Gribble and print them to the screen:
 ```
 ./pubmed 'gribble pl[au]' 3
 ```
-produces:
+
 ```
 Sat Nov 21 09:58:56 2015
 searched: gribble pl[au]
