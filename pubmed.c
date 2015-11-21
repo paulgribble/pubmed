@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <curl/curl.h>             // must have libcurl installed
 #include <libxml2/libxml/xpath.h>  // must have libxml2 installed
 
@@ -243,6 +244,16 @@ void get_articles(char **pmid_array, int ret, int do_links) {
   curl_easy_cleanup(curl);  
 }
 
+void get_the_time(char timestr[]) {
+
+  time_t rawtime;
+  struct tm *timeinfo;
+
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+  strcpy(timestr, asctime(timeinfo));
+  
+}
 
 int main(int argc, char *argv[]) {
 
@@ -269,7 +280,12 @@ int main(int argc, char *argv[]) {
         printf("<style>\nli {\nmargin-bottom: 1em;\n}\n</style>\n");
         printf("</head>\n<body>\n<p>");
       }
-      printf("\nsearched: %s\n", argv[1]);
+
+      char current_time[256];
+      get_the_time(current_time);
+      printf("\n%s", current_time);
+      if (do_links) { printf("<br>"); }
+      printf("searched: %s\n", argv[1]);
       if (do_links) { printf("<br>"); }
 
       for (int i=0; i<strlen(argv[1]); i++) {
