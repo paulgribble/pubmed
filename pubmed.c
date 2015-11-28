@@ -95,9 +95,11 @@ char * get_xml_field(xmlChar *fieldPath, xmlXPathContextPtr context) {
       fieldStr[0]='\0';
     }
     else {
-      int field_len = strlen((char *)xmlNodeGetContent(fieldPtr->nodesetval->nodeTab[0]));
-      strncpy(fieldStr, (char *)xmlNodeGetContent(fieldPtr->nodesetval->nodeTab[0]), field_len);
+      char *tmp = (char *)xmlNodeGetContent(fieldPtr->nodesetval->nodeTab[0]);
+      int field_len = strlen(tmp);
+      strncpy(fieldStr, tmp, field_len);
       fieldStr[field_len] = '\0';
+      free(tmp);
     }
   xmlXPathFreeObject(fieldPtr);
   return fieldStr;
