@@ -68,7 +68,9 @@ void get_pmids(char *search_term, int retmax, char **pmid_array, int *ret, int *
     *ret = pmids->nodesetval->nodeNr;
     for (int i=0; i<*ret; i++) {
         pmid_array[i] = malloc(sizeof(char)*9);
-        strncpy(pmid_array[i], (char *)xmlNodeGetContent(pmids->nodesetval->nodeTab[i]), 8);
+	char *tmp = (char *)xmlNodeGetContent(pmids->nodesetval->nodeTab[i]);
+        strncpy(pmid_array[i], tmp, 8);
+	free(tmp);
         pmid_array[i][8] = '\0';
     }
     xmlChar *countpath = (xmlChar *)"//eSearchResult/Count";
@@ -76,10 +78,12 @@ void get_pmids(char *search_term, int retmax, char **pmid_array, int *ret, int *
     char *countChar = (char *) xmlNodeGetContent(countPtr->nodesetval->nodeTab[0]);
     *count = atoi(countChar);
 
+    free(countChar);
     xmlXPathFreeObject(countPtr);
     xmlXPathFreeObject(pmids);
     xmlXPathFreeContext(context);
     xmlFreeDoc(doc);
+    free(s.ptr);
     curl_easy_cleanup(curl);
 }
 
