@@ -1,6 +1,7 @@
 # pubmed
 C code for searching PubMed
 (work in progress)
+there are some memory leaks, I'm working on it
 
 dependencies: libcurl and libxml2
 
