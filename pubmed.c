@@ -102,6 +102,7 @@ char * get_xml_field(xmlChar *fieldPath, xmlXPathContextPtr context) {
 char * get_xml_authors(xmlXPathContextPtr context) {
 
   char *authorStr = malloc(sizeof(char)*512);
+  authorStr[0] = '\0';
 
   xmlChar *authorListPath = (xmlChar *) "MedlineCitation/Article/AuthorList/Author";
   xmlXPathObjectPtr authors = xmlXPathEvalExpression(authorListPath, context);
