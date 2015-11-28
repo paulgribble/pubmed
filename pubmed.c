@@ -310,8 +310,9 @@ int main(int argc, char *argv[]) {
 
       if (do_links) { printf("\n</body>\n</html>"); }
 
-      for (int i=0; i<ret; i++) { free(pmid_array[i]); }
+      for (int i=0; i<retmax; i++) { free(pmid_array[i]); }
       free(pmid_array);
     }
+
     return 0;
 }
