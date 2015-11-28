@@ -238,7 +238,6 @@ void get_articles(char **pmid_array, int ret, int do_links) {
     free(issueStr);
     free(pagesStr);
     free(doiStr);
-
   }
 
   printf("\n");
