@@ -248,6 +248,7 @@ void get_articles(char **pmid_array, int ret, int do_links) {
   xmlXPathFreeObject(articles);
   xmlXPathFreeContext(context);
   xmlFree(doc);
+  free(s.ptr);
   curl_easy_cleanup(curl);  
 }
 
@@ -259,7 +260,6 @@ void get_the_time(char timestr[]) {
   time(&rawtime);
   timeinfo = localtime(&rawtime);
   strcpy(timestr, asctime(timeinfo));
-  
 }
 
 int main(int argc, char *argv[]) {
