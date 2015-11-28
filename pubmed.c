@@ -159,7 +159,6 @@ void get_articles(char **pmid_array, int ret, int do_links) {
 
   xmlDocPtr doc = xmlParseDoc((xmlChar *)s.ptr);
   xmlXPathContextPtr context = xmlXPathNewContext(doc);
-
   xmlChar *articlepath = (xmlChar *) "//PubmedArticleSet/PubmedArticle";
   xmlXPathObjectPtr articles = xmlXPathEvalExpression(articlepath, context);
   int ret_art = articles->nodesetval->nodeNr;
@@ -244,10 +243,11 @@ void get_articles(char **pmid_array, int ret, int do_links) {
 
   printf("\n");
   if (do_links) { printf("</ol>\n"); }
-  
+
   xmlXPathFreeObject(articles);
   xmlXPathFreeContext(context);
   xmlFree(doc);
+
   free(s.ptr);
   curl_easy_cleanup(curl);  
 }
