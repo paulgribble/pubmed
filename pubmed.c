@@ -286,8 +286,8 @@ int main(int argc, char *argv[]) {
         printf("<style>\n");
 	printf("li {\nmargin-bottom: 1em;\n}\n");
 	printf("body {\n");
-	printf("font-family: sans-serif;\n");
-        printf("font-size: 10pt;\n");
+	printf("font-family: verdana, sans-serif;\n");
+        printf("font-size: 11pt;\n");
         printf("text-align: left;\n");
         printf("padding-left: 5%%;\n");
         printf("padding-right: 5%%;\n");
