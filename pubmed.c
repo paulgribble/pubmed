@@ -283,7 +283,23 @@ int main(int argc, char *argv[]) {
 
       if (do_links) {
         printf("<html>\n<head>\n");
-        printf("<style>\nli {\nmargin-bottom: 1em;\n}\n</style>\n");
+        printf("<style>\n");
+	printf("li {\nmargin-bottom: 1em;\n}\n");
+	printf("body {\n");
+	printf("font-family: sans-serif;\n");
+        printf("font-size: 10pt;\n");
+        printf("text-align: left;\n");
+        printf("padding-left: 5%%;\n");
+        printf("padding-right: 5%%;\n");
+        printf("padding-bottom: 5%%;\n");
+        printf("padding-top: 1%%;\n");
+        printf("line-height: 1.3;\n");
+	printf("}\n");
+	printf("body a {\n");
+	printf("color: #2580a2;\n");
+	printf("text-decoration: none;\n");
+	printf("}\n");
+	printf("\n</style>\n");
         printf("</head>\n<body>\n<p>");
       }
 
