@@ -212,14 +212,14 @@ void get_articles(char **pmid_array, int ret, int do_links) {
     strcat(citationStr, ".");
     if (do_links) {
       if (strlen(doiStr)>0) {
-        strcat(citationStr, " <a href=\"http://doi.org/");
+        strcat(citationStr, " [ <a href=\"http://doi.org/");
         strcat(citationStr, doiStr);
-        strcat(citationStr, "\">link</a>");
+        strcat(citationStr, "\">link</a> ]");
       }
       else {
-        strcat(citationStr, " <a href=\"http://www.ncbi.nlm.nih.gov/pubmed/?term=");
+        strcat(citationStr, " [ <a href=\"http://www.ncbi.nlm.nih.gov/pubmed/?term=");
         strcat(citationStr, pmid_array[i]);
-        strcat(citationStr, "[pmid]\">link</a>");
+        strcat(citationStr, "[pmid]\">link</a> ]");
       }
     }
 
