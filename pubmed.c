@@ -10,7 +10,7 @@
 #include <curl/curl.h>             // must have libcurl installed
 #include <libxml2/libxml/xpath.h>  // must have libxml2 installed
 
-const char *pmids_url_base = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed";
+const char *pmids_url_base = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed";
 
 typedef struct {
   char *ptr;
@@ -137,7 +137,7 @@ char * get_xml_authors(xmlXPathContextPtr context) {
 void get_articles(char **pmid_array, int ret, int do_links) {
 
   char fetch_url[4096]="";
-  strcat(fetch_url, "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
+  strcat(fetch_url, "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
   for (int i=0; i<ret; i++) {
     strcat(fetch_url, pmid_array[i]);
     strcat(fetch_url, ",");
