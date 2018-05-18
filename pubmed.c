@@ -284,6 +284,7 @@ int main(int argc, char *argv[]) {
       if (do_links) {
         printf("<html>\n<head>\n");
         printf("<style>\n");
+	printf("ol {\npadding-left: 0%%;\n}\n");
 	printf("li {\nmargin-bottom: 1em;\n}\n");
 	printf("body {\n");
 	printf("font-family: verdana, sans-serif;\n");
