@@ -8,6 +8,8 @@
 ### on Mac OS X (tested on El Capitan)
 # brew install libxml2
 # brew link libxml2 --force
+# sudo ln -s /usr/local/opt/libxml2/include/libxml2/libxml /usr/local/include/libxml
 
 pubmed: pubmed.c
-	gcc --std=c99 -Wall pubmed.c -lxml2 -lcurl -I/usr/include/libxml2 -o pubmed
+	gcc --std=c99 -Wall pubmed.c -I/usr/local/opt/libxml2/include -L/usr/local/opt/libxml2/lib -lxml2 -lcurl -o pubmed
+
