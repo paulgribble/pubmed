@@ -10,6 +10,9 @@
 # brew link libxml2 --force
 # sudo ln -s /usr/local/opt/libxml2/include/libxml2/libxml /usr/local/include/libxml
 
-pubmed: pubmed.c
-	gcc --std=c99 -Wall pubmed.c -I/usr/local/opt/libxml2/include -L/usr/local/opt/libxml2/lib -lxml2 -lcurl -o pubmed
+pubmed-mac: pubmed.c
+	gcc --std=c99 -Wall pubmed.c -I/usr/local/opt/libxml2/include/libxml2 -L/usr/local/opt/libxml2/lib -lxml2 -lcurl -o pubmed
+
+pubmed-linux:	pubmed.c
+	gcc --std=c99 -Wall pubmed.c -I/usr/include/libxml2/include -L/usr/include/libxml2/lib -lxml2 -lcurl -o pubmed
 
