@@ -121,7 +121,7 @@ char * get_xml_authors(xmlXPathContextPtr context) {
     xmlXPathSetContextNode(authors->nodesetval->nodeTab[i], context);
     char *lastname = get_xml_field(lastnamePath, context);
     char *initials = get_xml_field(initialsPath, context);
-    strcpy(authorStr, lastname);
+    strcat(authorStr, lastname);
     strcat(authorStr, " ");
     strcat(authorStr, initials);
     strcat(authorStr, ", ");
@@ -166,7 +166,7 @@ void get_articles(char **pmid_array, int ret, int do_links) {
 
   xmlChar *yearPath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year";
   xmlChar *titlePath = (xmlChar *) "MedlineCitation/Article/ArticleTitle";
-  xmlChar *journalPath = (xmlChar *) "MedlineCitation/Article/Journal/ISOAbbreviation";
+  xmlChar *journalPath = (xmlChar *) "MedlineCitation/MedlineJournalInfo/MedlineTA";
   xmlChar *volumePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Volume";
   xmlChar *issuePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Issue";  
   xmlChar *pagesPath = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
