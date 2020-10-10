@@ -46,7 +46,7 @@ void get_pmids(char *search_term, int retmax, char **pmid_array, int *ret, int *
     char retmax_str[16] = "";
     sprintf(retmax_str, "%d", retmax); 
     char pmids_url[256] = "";
-    strcat(pmids_url, pmids_url_base);
+    strcpy(pmids_url, pmids_url_base);
     strcat(pmids_url, "&retmax=");
     strcat(pmids_url, retmax_str);        
     strcat(pmids_url, "&term=");
@@ -121,7 +121,7 @@ char * get_xml_authors(xmlXPathContextPtr context) {
     xmlXPathSetContextNode(authors->nodesetval->nodeTab[i], context);
     char *lastname = get_xml_field(lastnamePath, context);
     char *initials = get_xml_field(initialsPath, context);
-    strcat(authorStr, lastname);
+    strcpy(authorStr, lastname);
     strcat(authorStr, " ");
     strcat(authorStr, initials);
     strcat(authorStr, ", ");
@@ -137,7 +137,7 @@ char * get_xml_authors(xmlXPathContextPtr context) {
 void get_articles(char **pmid_array, int ret, int do_links) {
 
   char fetch_url[4096]="";
-  strcat(fetch_url, "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
+  strcpy(fetch_url, "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&id=");
   for (int i=0; i<ret; i++) {
     strcat(fetch_url, pmid_array[i]);
     strcat(fetch_url, ",");
