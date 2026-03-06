@@ -164,13 +164,13 @@ void get_articles(char **pmid_array, int ret, int do_links) {
   int ret_art = articles->nodesetval->nodeNr;
   //printf("%d returned\n", ret_art);
 
-  xmlChar *yearPath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year";
-  xmlChar *titlePath = (xmlChar *) "MedlineCitation/Article/ArticleTitle";
+  xmlChar *yearPath    = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year";
+  xmlChar *titlePath   = (xmlChar *) "MedlineCitation/Article/ArticleTitle";
   xmlChar *journalPath = (xmlChar *) "MedlineCitation/MedlineJournalInfo/MedlineTA";
-  xmlChar *volumePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Volume";
-  xmlChar *issuePath = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Issue";  
-  xmlChar *pagesPath = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
-  xmlChar *doiPath = (xmlChar *) "MedlineCitation/Article/ELocationID";
+  xmlChar *volumePath  = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Volume";
+  xmlChar *issuePath   = (xmlChar *) "MedlineCitation/Article/Journal/JournalIssue/Issue";  
+  xmlChar *pagesPath   = (xmlChar *) "MedlineCitation/Article/Pagination/MedlinePgn";
+  xmlChar *doiPath     = (xmlChar *) "MedlineCitation/Article/ELocationID";
   
   char citationStr[1024] = "";
 
