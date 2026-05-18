@@ -1,33 +1,33 @@
 # pubmed
-C code for searching PubMed
-(work in progress)
 
-dependencies: libcurl and libxml2
+C code for searching PubMed.
 
-## building
+Dependencies: libcurl and libxml2.
+
+## Building
+
+Requires libcurl and libxml2 (both with development headers), `pkg-config`, and a C99 compiler.
 
 ### macOS (Homebrew)
 
-libcurl ships with macOS via the Xcode Command Line Tools, so only libxml2 needs to be installed:
+```
+brew install libxml2 pkg-config
+export PKG_CONFIG_PATH="$(brew --prefix libxml2)/lib/pkgconfig"
+make
+```
 
-```
-xcode-select --install
-brew install libxml2
-brew link libxml2 --force
-sudo ln -s /usr/local/include/libxml /opt/homebrew/include/libxml2/libxml/
-make pubmed-mac
-```
+(libcurl ships with the Xcode Command Line Tools.)
 
 ### Linux (Debian/Ubuntu)
 
 ```
-sudo apt-get install libcurl4-gnutls-dev libxml2-dev
-make pubmed-linux
+sudo apt-get install build-essential pkg-config libcurl4-openssl-dev libxml2-dev
+make
 ```
 
-usage examples:
+## Usage
 
-retrieve 3 most recent articles by P.L. Gribble and print them to the screen:
+Retrieve the 3 most recent articles by P.L. Gribble and print them to the screen:
 
 ```
 ./pubmed 'gribble pl[au]' 3
@@ -35,10 +35,8 @@ retrieve 3 most recent articles by P.L. Gribble and print them to the screen:
 
 ![](screenshot_1.png)
 
-
-retrieve 5 most recent articles by P.L. Gribble, and write the list
-	 to a file called gribble.html in pretty html format, and then
-	 open that file in a web browser (works on a mac):
+Retrieve the 5 most recent articles by P.L. Gribble, write the list to
+`gribble.html` in pretty HTML format, and open it in a browser (macOS):
 
 ```
 ./pubmed 'gribble pl[au]' 5 1 > gribble.html && open gribble.html

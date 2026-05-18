@@ -1,15 +1,16 @@
 // pubmed: query NCBI PubMed E-utilities and print citations.
 //
 // Dependencies: libcurl, libxml2.
-//   macOS:  brew install libxml2
-//   Debian: apt-get install libcurl4-gnutls-dev libxml2-dev
+//   macOS:  brew install libxml2 pkg-config
+//           export PKG_CONFIG_PATH="$(brew --prefix libxml2)/lib/pkgconfig"
+//   Debian: apt-get install libcurl4-openssl-dev libxml2-dev pkg-config
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <curl/curl.h>
-#include <libxml2/libxml/xpath.h>
+#include <libxml/xpath.h>
 
 #define DEFAULT_RETMAX 3
 
@@ -45,9 +46,14 @@ typedef struct {
   size_t cap;
 } Buffer;
 
+static void die(const char *msg) {
+  perror(msg);
+  exit(EXIT_FAILURE);
+}
+
 static void buf_init(Buffer *b) {
   b->data = malloc(1);
-  if (!b->data) { perror("malloc"); exit(EXIT_FAILURE); }
+  if (!b->data) die("malloc");
   b->data[0] = '\0';
   b->len = 0;
   b->cap = 1;
@@ -57,7 +63,7 @@ static void buf_append(Buffer *b, const char *s, size_t n) {
   if (b->len + n + 1 > b->cap) {
     while (b->len + n + 1 > b->cap) b->cap *= 2;
     char *np = realloc(b->data, b->cap);
-    if (!np) { perror("realloc"); exit(EXIT_FAILURE); }
+    if (!np) die("realloc");
     b->data = np;
   }
   memcpy(b->data + b->len, s, n);
@@ -67,6 +73,24 @@ static void buf_append(Buffer *b, const char *s, size_t n) {
 
 static void buf_append_str(Buffer *b, const char *s) {
   buf_append(b, s, strlen(s));
+}
+
+// Append `s` with &, <, >, " escaped for HTML.
+static void buf_append_html(Buffer *b, const char *s) {
+  for (const char *p = s; *p; p++) {
+    switch (*p) {
+      case '&': buf_append_str(b, "&amp;");  break;
+      case '<': buf_append_str(b, "&lt;");   break;
+      case '>': buf_append_str(b, "&gt;");   break;
+      case '"': buf_append_str(b, "&quot;"); break;
+      default:  buf_append(b, p, 1);         break;
+    }
+  }
+}
+
+static void buf_append_maybe_html(Buffer *b, const char *s, int html) {
+  if (html) buf_append_html(b, s);
+  else      buf_append_str(b, s);
 }
 
 static size_t buf_curl_cb(void *ptr, size_t size, size_t nmemb, Buffer *b) {
@@ -100,31 +124,51 @@ static char *http_get(const char *url) {
 // First-match text of an XPath query, malloc'd. Empty string if no match.
 static char *xpath_text(xmlXPathContextPtr ctx, const char *xpath) {
   xmlXPathObjectPtr obj = xmlXPathEvalExpression((const xmlChar *)xpath, ctx);
-  char *out;
-  if (!obj || xmlXPathNodeSetIsEmpty(obj->nodesetval)) {
-    out = strdup("");
-  } else {
+  char *out = NULL;
+  if (obj && !xmlXPathNodeSetIsEmpty(obj->nodesetval)) {
     xmlChar *content = xmlNodeGetContent(obj->nodesetval->nodeTab[0]);
     out = strdup(content ? (const char *)content : "");
     xmlFree(content);
+  } else {
+    out = strdup("");
   }
+  if (!out) die("strdup");
   if (obj) xmlXPathFreeObject(obj);
   return out;
 }
 
-// NULL-terminated array of PMID strings. *count gets the total match count.
-static char **get_pmids(const char *search_term, int retmax, int *count) {
-  *count = 0;
-
-  CURL *escaper = curl_easy_init();
-  char *encoded = curl_easy_escape(escaper, search_term, 0);
+// Build the esearch URL for `term` with `retmax`. Caller frees. NULL on error.
+static char *build_esearch_url(const char *term, int retmax) {
+  CURL *esc = curl_easy_init();
+  if (!esc) {
+    fprintf(stderr, "curl_easy_init failed\n");
+    return NULL;
+  }
+  char *encoded = curl_easy_escape(esc, term, 0);
+  if (!encoded) {
+    fprintf(stderr, "curl_easy_escape failed\n");
+    curl_easy_cleanup(esc);
+    return NULL;
+  }
   size_t url_len = strlen(ESEARCH_URL) + strlen(encoded) + 64;
   char *url = malloc(url_len);
+  if (!url) die("malloc");
   snprintf(url, url_len, "%s?db=pubmed&retmax=%d&term=%s",
            ESEARCH_URL, retmax, encoded);
   curl_free(encoded);
-  curl_easy_cleanup(escaper);
+  curl_easy_cleanup(esc);
+  return url;
+}
 
+// NULL-terminated array of PMID strings. *count gets the total match count,
+// *got the number of IDs returned. Caller frees the array with free_pmid_array.
+static char **get_pmids(const char *search_term, int retmax,
+                        int *count, int *got) {
+  *count = 0;
+  *got = 0;
+
+  char *url = build_esearch_url(search_term, retmax);
+  if (!url) return NULL;
   char *xml = http_get(url);
   free(url);
   if (!xml) return NULL;
@@ -137,17 +181,26 @@ static char **get_pmids(const char *search_term, int retmax, int *count) {
   }
 
   xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
+  if (!ctx) {
+    fprintf(stderr, "xmlXPathNewContext failed\n");
+    xmlFreeDoc(doc);
+    return NULL;
+  }
+
   xmlXPathObjectPtr ids = xmlXPathEvalExpression(
     (const xmlChar *)"//eSearchResult/IdList/Id", ctx);
   int n = (ids && ids->nodesetval) ? ids->nodesetval->nodeNr : 0;
 
   char **pmids = malloc(sizeof(char *) * (n + 1));
+  if (!pmids) die("malloc");
   for (int i = 0; i < n; i++) {
     xmlChar *id = xmlNodeGetContent(ids->nodesetval->nodeTab[i]);
     pmids[i] = strdup((const char *)id);
+    if (!pmids[i]) die("strdup");
     xmlFree(id);
   }
   pmids[n] = NULL;
+  *got = n;
 
   char *cnt = xpath_text(ctx, "//eSearchResult/Count");
   *count = atoi(cnt);
@@ -159,7 +212,14 @@ static char **get_pmids(const char *search_term, int retmax, int *count) {
   return pmids;
 }
 
-// "Lastname IN, Lastname2 IN2" — malloc'd. Empty string if no authors.
+static void free_pmid_array(char **pmids) {
+  if (!pmids) return;
+  for (int i = 0; pmids[i]; i++) free(pmids[i]);
+  free(pmids);
+}
+
+// "Lastname IN, Lastname2 IN2" — malloc'd. Falls back to CollectiveName for
+// group authors. Skips empty entries so no stray ", ," appears.
 // Saves/restores the XPath context node so callers aren't affected.
 static char *get_authors(xmlXPathContextPtr ctx) {
   xmlNodePtr saved = ctx->node;
@@ -169,20 +229,44 @@ static char *get_authors(xmlXPathContextPtr ctx) {
 
   Buffer b;
   buf_init(&b);
+  int written = 0;
   for (int i = 0; i < n; i++) {
     xmlXPathSetContextNode(list->nodesetval->nodeTab[i], ctx);
-    char *last = xpath_text(ctx, "LastName");
+    char *last     = xpath_text(ctx, "LastName");
     char *initials = xpath_text(ctx, "Initials");
-    if (i > 0) buf_append_str(&b, ", ");
-    buf_append_str(&b, last);
-    buf_append_str(&b, " ");
-    buf_append_str(&b, initials);
+    char *group    = (*last) ? NULL : xpath_text(ctx, "CollectiveName");
+
+    if (*last || (group && *group)) {
+      if (written) buf_append_str(&b, ", ");
+      if (*last) {
+        buf_append_str(&b, last);
+        if (*initials) {
+          buf_append_str(&b, " ");
+          buf_append_str(&b, initials);
+        }
+      } else {
+        buf_append_str(&b, group);
+      }
+      written++;
+    }
     free(last);
     free(initials);
+    free(group);
   }
   if (list) xmlXPathFreeObject(list);
   ctx->node = saved;
   return b.data;
+}
+
+// Year string, malloc'd. Falls back to the leading 4 chars of MedlineDate when
+// the structured Year element is missing.
+static char *get_year(xmlXPathContextPtr ctx) {
+  char *year = xpath_text(ctx, "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year");
+  if (*year) return year;
+  free(year);
+  char *md = xpath_text(ctx, "MedlineCitation/Article/Journal/JournalIssue/PubDate/MedlineDate");
+  if (strlen(md) >= 4) md[4] = '\0';
+  return md;
 }
 
 static char *build_efetch_url(char **pmids) {
@@ -195,6 +279,43 @@ static char *build_efetch_url(char **pmids) {
     buf_append_str(&b, pmids[i]);
   }
   return b.data;
+}
+
+// Assemble one citation line into `out`. `out` must be initialised by caller.
+static void format_citation(Buffer *out, const char *authors, const char *year,
+                            const char *title, const char *journal,
+                            const char *volume, const char *issue,
+                            const char *pages, const char *link, int html) {
+  buf_append_maybe_html(out, authors, html);
+  buf_append_str(out, " (");
+  buf_append_maybe_html(out, year, html);
+  buf_append_str(out, ") ");
+  buf_append_maybe_html(out, title, html);
+  buf_append_str(out, " ");
+  if (html) buf_append_str(out, "<b>");
+  buf_append_maybe_html(out, journal, html);
+  buf_append_str(out, " ");
+  buf_append_maybe_html(out, volume, html);
+  if (*issue) {
+    buf_append_str(out, "(");
+    buf_append_maybe_html(out, issue, html);
+    buf_append_str(out, ")");
+  }
+  if (html) buf_append_str(out, "</b>");
+  if (*pages) {
+    buf_append_str(out, ":");
+    buf_append_maybe_html(out, pages, html);
+  }
+  buf_append_str(out, ". ");
+  if (html) {
+    buf_append_str(out, "<a href=\"");
+    buf_append_html(out, link);
+    buf_append_str(out, "\">");
+    buf_append_html(out, link);
+    buf_append_str(out, "</a>");
+  } else {
+    buf_append_str(out, link);
+  }
 }
 
 static void print_articles(char **pmids, int html) {
@@ -211,6 +332,12 @@ static void print_articles(char **pmids, int html) {
   }
 
   xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
+  if (!ctx) {
+    fprintf(stderr, "xmlXPathNewContext failed\n");
+    xmlFreeDoc(doc);
+    return;
+  }
+
   xmlXPathObjectPtr articles = xmlXPathEvalExpression(
     (const xmlChar *)"//PubmedArticleSet/PubmedArticle", ctx);
   int n_art = (articles && articles->nodesetval)
@@ -222,7 +349,7 @@ static void print_articles(char **pmids, int html) {
     xmlXPathSetContextNode(articles->nodesetval->nodeTab[i], ctx);
 
     char *authors = get_authors(ctx);
-    char *year    = xpath_text(ctx, "MedlineCitation/Article/Journal/JournalIssue/PubDate/Year");
+    char *year    = get_year(ctx);
     char *title   = xpath_text(ctx, "MedlineCitation/Article/ArticleTitle");
     char *journal = xpath_text(ctx, "MedlineCitation/MedlineJournalInfo/MedlineTA");
     char *volume  = xpath_text(ctx, "MedlineCitation/Article/Journal/JournalIssue/Volume");
@@ -231,30 +358,6 @@ static void print_articles(char **pmids, int html) {
     char *doi     = xpath_text(ctx,
       "MedlineCitation/Article/ELocationID[@EIdType='doi']"
       " | PubmedData/ArticleIdList/ArticleId[@IdType='doi']");
-
-    Buffer c;
-    buf_init(&c);
-    buf_append_str(&c, authors);
-    buf_append_str(&c, " (");
-    buf_append_str(&c, year);
-    buf_append_str(&c, ") ");
-    buf_append_str(&c, title);
-    buf_append_str(&c, " ");
-    if (html) buf_append_str(&c, "<b>");
-    buf_append_str(&c, journal);
-    buf_append_str(&c, " ");
-    buf_append_str(&c, volume);
-    if (*issue) {
-      buf_append_str(&c, "(");
-      buf_append_str(&c, issue);
-      buf_append_str(&c, ")");
-    }
-    if (html) buf_append_str(&c, "</b>");
-    if (*pages) {
-      buf_append_str(&c, ":");
-      buf_append_str(&c, pages);
-    }
-    buf_append_str(&c, ".");
 
     Buffer link;
     buf_init(&link);
@@ -266,22 +369,17 @@ static void print_articles(char **pmids, int html) {
       buf_append_str(&link, pmids[i]);
       buf_append_str(&link, "[pmid]");
     }
-    buf_append_str(&c, " ");
-    if (html) {
-      buf_append_str(&c, "<a href=\"");
-      buf_append_str(&c, link.data);
-      buf_append_str(&c, "\">");
-      buf_append_str(&c, link.data);
-      buf_append_str(&c, "</a>");
-    } else {
-      buf_append_str(&c, link.data);
-    }
-    free(link.data);
+
+    Buffer c;
+    buf_init(&c);
+    format_citation(&c, authors, year, title, journal, volume, issue, pages,
+                    link.data, html);
 
     if (html) printf("\n<li>%s</li>\n", c.data);
     else      printf("\n%s\n", c.data);
 
     free(c.data);
+    free(link.data);
     free(authors);
     free(year);
     free(title);
@@ -298,18 +396,6 @@ static void print_articles(char **pmids, int html) {
   if (articles) xmlXPathFreeObject(articles);
   xmlXPathFreeContext(ctx);
   xmlFreeDoc(doc);
-}
-
-static void free_pmid_array(char **pmids) {
-  if (!pmids) return;
-  for (int i = 0; pmids[i]; i++) free(pmids[i]);
-  free(pmids);
-}
-
-static int pmid_count(char **pmids) {
-  int n = 0;
-  if (pmids) while (pmids[n]) n++;
-  return n;
 }
 
 int main(int argc, char *argv[]) {
@@ -334,9 +420,8 @@ int main(int argc, char *argv[]) {
   printf("searched: %s\n", search);
   if (html) printf("<br>");
 
-  int count = 0;
-  char **pmids = get_pmids(search, retmax, &count);
-  int got = pmid_count(pmids);
+  int count = 0, got = 0;
+  char **pmids = get_pmids(search, retmax, &count, &got);
 
   printf("returned %d/%d\n", got, count);
   if (html) printf("</p>\n");
